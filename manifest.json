@@ -1,0 +1,49 @@
+{
+    "manifest_version": 3,
+    "name": "Screenshot Extension",
+    "version": "1.0",
+    "description": "Capture screenshots of your screen or viewport",
+    "permissions": [
+      "activeTab",
+      "storage",
+      "tabs",
+      "desktopCapture",
+      "nativeMessaging",
+      "offscreen",
+      "tabCapture",
+      "contextMenus"
+    ],
+    "content_security_policy": {
+    "extension_pages":  "script-src 'self'; object-src 'self';"
+  },
+  "content_scripts": [
+    {
+      "js": ["src/popup.ts"],
+      "matches": [
+        "<all_urls>"
+      ]
+    }],
+    "background": {
+      "service_worker": "dist/background.js"
+    },
+    "action": {
+      "default_popup": "src/popup.html"
+    },
+    "web_accessible_resources": [
+      {
+        "resources": ["editor.html"], 
+        "matches": ["<all_urls>"]
+      }
+    ],
+    "icons": {
+      "16": "icons/screenshot_icon.png",
+      "48": "icons/screenshot_icon.png",
+      "128": "icons/screenshot_icon.png"
+    },
+    "host_permissions": [
+      "http://*/*",
+      "https://*/*",
+      "<all_urls>"
+    ]
+  }
+  

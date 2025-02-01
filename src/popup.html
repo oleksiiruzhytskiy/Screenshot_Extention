@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Capture Extension</title>
+    <link rel="stylesheet" href="styles/popup.css" />
+  </head>
+  <body>
+    <!-- Кнопка для открытия модального окна -->
+
+    <div class="button-container">
+      <button id="window">Экран/Окно</button>
+      <button id="captureButton">Снимок Вкладки</button>
+    </div>
+
+    <!-- Модальное окно с кнопками для выбора типа скриншота -->
+    <div id="captureModal" class="modal">
+      <div class="modal-content">
+        <span class="close" id="closeModal">&times;</span>
+        <h2>Выберите тип скриншота</h2>
+        <button id="captureScreen">Снимок экрана</button>
+        <button id="captureWindow">Снимок окна</button>
+        <button id="captureTab">Снимок вкладки</button>
+      </div>
+    </div>
+
+    <script src="popup.ts"></script>
+  </body>
+</html>

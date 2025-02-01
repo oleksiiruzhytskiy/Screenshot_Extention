@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Редактор скриншота</title>
+    <link rel="stylesheet" href="src/styles/cropper.css" />
+    <link rel="stylesheet" href="src/styles/editor.css" />
+  </head>
+  <body>
+    <div class="cropper-container">
+      <h2>Редактирование скриншота</h2>
+      <div>
+        <img id="screenshotImage" alt="img" />
+      </div>
+
+      <div>
+        <button id="rotateToRight">To right</button>
+        <button id="rotateToLeft">To left</button>
+        <button id="zoomInBtn">Zoom In</button>
+        <button id="zoomOutBtn">Zoom Out</button>
+        <button id="cropBtn">Crop</button>
+        <button id="downloadBtn">Download</button>
+      </div>
+    </div>
+    <script src="src/libs/cropper.min.js"></script>
+    <script src="src/editor.ts"></script>
+  </body>
+</html>
