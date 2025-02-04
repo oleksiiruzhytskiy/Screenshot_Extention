@@ -1,41 +1,46 @@
-document.getElementById("window")?.addEventListener("click", () => {
-  navigator.mediaDevices
-    .getDisplayMedia({
-      video: {
-        //@ts-ignore
-        mediaSource: "screen", // или "window", "screen" — для всего экрана, "window" — для отдельного окна
-      },
-    })
-    .then((stream) => {
-      const track = stream.getVideoTracks()[0];
-      const imageCapture = new ImageCapture(track);
+import { log } from "./utils/logger";
+const saveScreenshotAndOpenEditor = (dataUrl: string) => {
+  if (!dataUrl) {
+    log("❌ Ошибка: пустое изображение.");
+    return;
+  }
 
-      imageCapture.grabFrame().then((imageBitmap) => {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          console.error("❌ Ошибка контекста canvas.");
-          return;
-        }
+  chrome.storage.local.set({ screenshot: dataUrl }, () => {
+    log("📷 Скриншот сохранен!");
+    log("Set local storage screenshot:", dataUrl);
 
-        canvas.width = imageBitmap.width;
-        canvas.height = imageBitmap.height;
-        ctx.drawImage(imageBitmap, 0, 0);
-        const dataUrl = canvas.toDataURL();
+    chrome.tabs.create({ url: "editor.html" });
+  });
+};
 
-        // ✅ Сохраняем изображение в `chrome.storage`
-        chrome.storage.local.set({ screenshot: dataUrl }, () => {
-          console.log("dataUrl", dataUrl);
-          console.log("📷 Скриншот сохранен!");
+document.getElementById("windowButton")?.addEventListener("click", () => {
+  setTimeout(() => {
+    const popupContainer = document.querySelector(".popup-container");
+    if (popupContainer) {
+      document.body.style.display = "none";
+    }
+  }, 300);
+  chrome.runtime.sendMessage({ action: "requestCapture" });
+  log("Click on Window and send message /requestCapture/");
+});
 
-          // ✅ Открываем редактор в новой вкладке
-          chrome.tabs.create({ url: "editor.html" });
-        });
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.action === "screenshotCaptured") {
+    saveScreenshotAndOpenEditor(message.dataUrl);
+  } else if (message.action === "captureError") {
+    log("Ошибка захвата:", message.error);
+  }
+});
 
-        track.stop();
-      });
-    })
-    .catch((error) => {
-      console.error("❌ Ошибка получения потока:", error);
-    });
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.action === "captureError") {
+    log(
+      "❌ Ошибка захвата при считывании сообщения /captureError/:",
+      message.error
+    );
+  }
+});
+
+document.getElementById("captureButton")?.addEventListener("click", () => {
+  chrome.tabs.captureVisibleTab({ format: "png" }, saveScreenshotAndOpenEditor);
 });

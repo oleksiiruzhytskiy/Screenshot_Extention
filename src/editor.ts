@@ -1,25 +1,32 @@
-// import Cropper from 'cropperjs';
-//@ts-nocheck
-
+import Cropper from "cropperjs";
+import {log} from "./utils/logger";
 document.addEventListener("DOMContentLoaded", () => {
-  const imgElement = document.getElementById("screenshotImage");
-  const downloadBtn = document.getElementById("downloadBtn");
-  const rotateToRightBtn = document.getElementById("rotateToRight");
-  const rotateToLeftBtn = document.getElementById("rotateToLeft");
-  const zoomInBtn = document.getElementById("zoomInBtn");
-  const zoomOutBtn = document.getElementById("zoomOutBtn");
+  const imgElement = document.getElementById(
+    "screenshotImage"
+  ) as HTMLImageElement;
+  const downloadBtn = document.getElementById(
+    "downloadBtn"
+  ) as HTMLButtonElement;
+  const rotateToRightBtn = document.getElementById(
+    "rotateToRight"
+  ) as HTMLButtonElement;
+  const rotateToLeftBtn = document.getElementById(
+    "rotateToLeft"
+  ) as HTMLButtonElement;
+  const zoomInBtn = document.getElementById("zoomInBtn") as HTMLButtonElement;
+  const zoomOutBtn = document.getElementById("zoomOutBtn") as HTMLButtonElement;
   const cropBtn = document.getElementById("cropBtn");
 
   if (!imgElement || !downloadBtn) {
-    console.error("❌ Ошибка: Элементы не найдены!");
+    log("❌ Ошибка: Элементы не найдены!");
     return;
   }
-let cropper;
-let originalImageBlob;
-let croppedImageBlob;
+  let cropper: Cropper;
+  let originalImageBlob: Blob;
+  let croppedImageBlob: Blob;
 
   // Функция для получения Blob из изображения
-  const getImageBlob = (src) => {
+  const getImageBlob = (src: string): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
@@ -39,6 +46,21 @@ let croppedImageBlob;
       img.src = src;
     });
   };
+  const initializeCropper = () => {
+    cropper = new Cropper(imgElement, {
+      aspectRatio: NaN,
+      viewMode: 2,
+      responsive: true,
+      autoCropArea: 1,
+      center: true,
+      ready() {
+        log("Cropper готов!");
+      },
+      crop(event) {
+        log("Обрезка произошла!", event.detail);
+      },
+    });
+  };
 
   chrome.storage.local.get("screenshot", (data) => {
     if (data.screenshot) {
@@ -46,32 +68,25 @@ let croppedImageBlob;
       imgElement.onload = async () => {
         try {
           originalImageBlob = await getImageBlob(imgElement.src);
-          console.log(
+          log(
             "🖼 Исходное изображение загружено и преобразовано в Blob!"
           );
+          log('Image', imgElement.src);
         } catch (error) {
-          console.error(error);
+          log(error);
         }
 
-        cropper = new Cropper(imgElement, {
-          aspectRatio: NaN,
-          viewMode: 2,
-          responsive: true,
-          autoCropArea: 1,
-          ready() {
-            console.log("Cropper готов!");
-          },
-          crop(event) {
-            console.log("Обрезка произошла!", event.detail);
-          },
-        });
+        initializeCropper();
       };
     } else {
-      console.error("❌ Скриншот не найден!");
+      log("❌ Скриншот не найден!");
     }
   });
 
-  const handleButtonClick = (action, value) => {
+  const handleButtonClick = (
+    action: "rotate" | "zoom",
+    value: number
+  ): void => {
     if (cropper) {
       switch (action) {
         case "rotate":
@@ -81,17 +96,34 @@ let croppedImageBlob;
           cropper.zoom(value);
           break;
         default:
-          console.error("❌ Неверное действие");
+          log("❌ Неверное действие");
       }
     }
   };
 
-  rotateToRightBtn.addEventListener("click", () =>
-    handleButtonClick("rotate", 90)
-  );
-  rotateToLeftBtn.addEventListener("click", () =>
-    handleButtonClick("rotate", -90)
-  );
+  const centerImage = () => {
+    const canvasData = cropper.getCanvasData(); 
+    const imageData = cropper.getImageData(); 
+    log("canvasData", canvasData);
+    log("imageData", imageData);
+  
+    const newLeft = (canvasData.width - imageData.width) / 2;
+    const newTop = (canvasData.height - imageData.height) / 2;
+  
+    cropper.setCanvasData({
+      left: newLeft,
+      top: newTop,
+    });
+  };
+  
+  rotateToRightBtn.addEventListener("click", () => {
+    handleButtonClick("rotate", 90);
+    centerImage();
+  });
+  rotateToLeftBtn.addEventListener("click", () => {
+    handleButtonClick("rotate", -90);
+    centerImage();
+  });
   zoomInBtn.addEventListener("click", () => handleButtonClick("zoom", 0.1));
   zoomOutBtn.addEventListener("click", () => handleButtonClick("zoom", -0.1));
 
@@ -100,35 +132,35 @@ let croppedImageBlob;
       const canvas = cropper.getCroppedCanvas();
       const cropperModal = document.querySelector(".cropper-modal");
       if (cropperModal) {
-        cropperModal.style.opacity = '1';
+        (cropperModal as HTMLElement).style.opacity = "1";
       } else {
-        console.error("❌ Элемент .cropper-modal не найден!");
+        log("❌ Элемент .cropper-modal не найден!");
       }
 
       if (!canvas) {
-        console.error("❌ Ошибка получения canvas");
-        return;
+        log("❌ Ошибка получения canvas");
       }
 
       canvas.toBlob((blob) => {
         if (!blob) {
-          console.error("❌ Ошибка при создании Blob");
+          log("❌ Ошибка при создании Blob");
           return;
         }
 
         croppedImageBlob = blob;
         imgElement.src = URL.createObjectURL(croppedImageBlob);
-        console.log("📸 Изображение обрезано!");
+        log("📸 Изображение обрезано!");
+        cropper.destroy();
       }, "image/png");
     } else {
-      console.error("❌ Cropper не инициализирован!");
+      log("❌ Cropper не инициализирован!");
     }
   });
 
   downloadBtn.addEventListener("click", () => {
     const imageToDownload = croppedImageBlob || originalImageBlob;
     if (!imageToDownload) {
-      console.error("❌ Нет изображения для сохранения!");
+      log("❌ Нет изображения для сохранения!");
       return;
     }
 
@@ -138,6 +170,6 @@ let croppedImageBlob;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    console.log("📥 Изображение сохранено!");
+    log("📥 Изображение сохранено!");
   });
 });
